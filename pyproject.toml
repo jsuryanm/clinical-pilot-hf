@@ -1,55 +1,52 @@
 [project]
-name = "cliniqai"
-version = "0.0.1"
-description = "Clinical operations AI for Indian hospitals — multi-agent system"
+name = "clinical-pilot-hf"
+version = "0.1.0"
+description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "Apache-2.0" }
-authors = [{ name = "CliniqAI Team" }]
-
 dependencies = [
-  # Core
-  "pydantic>=2.7",
-  "python-dotenv>=1.0",
-  "structlog>=24.1",
-  "typing-extensions>=4.12",
-
-  # Web / API
-  "fastapi>=0.115",
-  "uvicorn[standard]>=0.30",
-  "httpx>=0.27",
-
-  # Orchestration + LLMs
-  "langgraph>=0.2.40",
-  "langchain-core>=0.3",
-  "litellm>=1.50",
-
-  # Persistence
-  "sqlalchemy>=2.0",
-  "alembic>=1.13",
-  "psycopg[binary]>=3.2",
-
-  # Background jobs
-  "celery[redis]>=5.4",
-  "redis>=5.0",
-
-  # Retrieval
-  "chromadb>=0.5",
-  "rank-bm25>=0.2.2",
-
-  # Observability
-  "langfuse>=2.50",
-
-  # UI
-  "gradio>=4.44",
+    "alembic>=1.18.4",
+    "celery[redis]>=5.6.3",
+    "chromadb>=1.5.9",
+    "fastapi>=0.136.3",
+    "gradio>=6.15.1",
+    "httpx>=0.28.1",
+    "langchain>=1.3.2",
+    "langchain-chroma>=1.1.0",
+    "langchain-community>=0.4.2",
+    "langchain-core>=1.4.0",
+    "langchain-groq>=1.1.2",
+    "langchain-huggingface>=1.2.2",
+    "langchain-mcp-adapters>=0.2.2",
+    "langchain-openrouter>=0.2.3",
+    "langchain-text-splitters>=1.1.2",
+    "langfuse>=4.6.1",
+    "langgraph>=1.2.2",
+    "langgraph-checkpoint-postgres>=3.1.0",
+    "langgraph-prebuilt>=1.1.0",
+    "litellm>=1.86.1",
+    "mypy>=2.1.0",
+    "psycopg[binary]>=3.3.4",
+    "pydantic>=2.13.4",
+    "pydantic-settings>=2.14.1",
+    "pypdf>=6.12.2",
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.4.0",
+    "rank-bm25>=0.2.2",
+    "redis>=6.4.0",
+    "respx>=0.23.1",
+    "ruff>=0.15.14",
+    "sqlalchemy>=2.0.50",
+    "unstructured>=0.21.5",
+    "uvicorn[standard]>=0.48.0",
 ]
 
 [project.optional-dependencies]
 dev = [
   "ruff>=0.6",
-  "mypy>=1.11",
-  "pytest>=8.3",
-  "pytest-asyncio>=0.24",
+  "mypy>=2.1.0",
+  "pytest>=9.0.3",
+  "pytest-asyncio>=1.4.0",
   "respx>=0.21",
 ]
 
@@ -69,7 +66,7 @@ select = ["E", "F", "I", "B", "UP", "SIM", "RET"]
 ignore = ["E501"]  # handled by formatter
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.12.12"
 strict = false  # best-effort across repo
 
 [[tool.mypy.overrides]]
