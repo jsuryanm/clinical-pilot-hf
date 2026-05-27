@@ -1,0 +1,6 @@
+# HF Spaces installs this. Keep it minimal — heavy deps live on the FastAPI
+# backend (EC2), not in the Space.
+gradio>=4.44
+httpx>=0.27
+pydantic>=2.7
+structlog>=24.1

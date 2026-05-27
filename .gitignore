@@ -216,3 +216,30 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- CliniqAI ---
+# Local secrets
+.env.local
+.env.*.local
+
+# Never commit patient bytes
+data/
+wiki/patients/*
+!wiki/patients/.gitkeep
+tmp_audio/
+*.wav
+*.mp3
+
+# Local model + index caches
+.cache/
+models/
+chroma_db/
+langfuse_data/
+
+# Docker volumes
+pgdata/
+redisdata/
+
+# OS
+.DS_Store
+Thumbs.db

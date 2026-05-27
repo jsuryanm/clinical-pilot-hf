@@ -1,0 +1,57 @@
+# CliniqAI local dev services.
+# Bring up:    make up
+# Tear down:   make down
+# Logs:        make logs
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cliniq-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cliniq}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cliniq}
+      POSTGRES_DB: ${POSTGRES_DB:-cliniq}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cliniq -d cliniq"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: cliniq-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Langfuse self-host needs its own postgres + clickhouse — we keep it light
+  # for hackathon scale and rely on Langfuse Cloud free tier in production.
+  # Set LANGFUSE_HOST=https://cloud.langfuse.com in .env.local to use cloud.
+  langfuse:
+    image: langfuse/langfuse:2
+    container_name: cliniq-langfuse
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://cliniq:cliniq@postgres:5432/cliniq
+      NEXTAUTH_SECRET: dev-secret-change-me
+      SALT: dev-salt-change-me
+      NEXTAUTH_URL: http://localhost:3001
+      TELEMETRY_ENABLED: "false"
+    ports:
+      - "3001:3000"
+
+volumes:
+  pgdata:
+  redisdata:

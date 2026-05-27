@@ -1,0 +1,82 @@
+[project]
+name = "cliniqai"
+version = "0.0.1"
+description = "Clinical operations AI for Indian hospitals — multi-agent system"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+authors = [{ name = "CliniqAI Team" }]
+
+dependencies = [
+  # Core
+  "pydantic>=2.7",
+  "python-dotenv>=1.0",
+  "structlog>=24.1",
+  "typing-extensions>=4.12",
+
+  # Web / API
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "httpx>=0.27",
+
+  # Orchestration + LLMs
+  "langgraph>=0.2.40",
+  "langchain-core>=0.3",
+  "litellm>=1.50",
+
+  # Persistence
+  "sqlalchemy>=2.0",
+  "alembic>=1.13",
+  "psycopg[binary]>=3.2",
+
+  # Background jobs
+  "celery[redis]>=5.4",
+  "redis>=5.0",
+
+  # Retrieval
+  "chromadb>=0.5",
+  "rank-bm25>=0.2.2",
+
+  # Observability
+  "langfuse>=2.50",
+
+  # UI
+  "gradio>=4.44",
+]
+
+[project.optional-dependencies]
+dev = [
+  "ruff>=0.6",
+  "mypy>=1.11",
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "respx>=0.21",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RET"]
+ignore = ["E501"]  # handled by formatter
+
+[tool.mypy]
+python_version = "3.12"
+strict = false  # best-effort across repo
+
+[[tool.mypy.overrides]]
+module = "app.contracts"
+strict = true  # contracts are the team interface — keep strict
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-ra -q"
