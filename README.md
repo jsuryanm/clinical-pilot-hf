@@ -46,9 +46,65 @@ Andrej Karpathy's LLM Wiki pattern solves this by having the AI maintain a struc
 | Layer | What it stores | Why |
 |---|---|---|
 | **LLM Wiki** | Patient histories, drug profiles, clinical protocols, SOPs | Evolving knowledge that needs to stay current and cross-referenced |
-| **Vector + BM25 RAG** | ICD-10 codes (95,000+), drug formulary, DSM-5 | Too large for the wiki; needs keyword-precise lookup |
+| **Vector + BM25 RAG** | ICD-10 / ICD-10-CM codes (74,000+), National Formulary of India, openFDA drug labels, SNOMED CT India Edition (incl. mental-health classifications via ICD-10 Chapter V) | Too large for the wiki; needs keyword-precise lookup |
 | **PostgreSQL** | Appointments, lab results, roster history | Structured data that is better queried with SQL |
 | **LangGraph State** | Current session data | In-memory working context for the active workflow |
+
+> **Note on DSM-5:** an earlier draft referenced DSM-5 here. APA copyright forbids ingesting DSM content into generative AI without a paid licence. We use **ICD-10 Chapter V (F00–F99) / ICD-11 Chapter 06** for mental-health classification instead, which are WHO-licensed and free. See [`plans/LEGAL_SOURCES.md`](plans/LEGAL_SOURCES.md) for the full rationale and the "do-not-upload" list.
+
+---
+
+## Knowledge Sources (Verified, Licensed, Local)
+
+Every document below is **legally redistributable for our use** and has been downloaded and integrity-checked. Run `bash scripts/fetch_data.sh` on a fresh clone to pull all of them into `data/` (gitignored — distributed via a shared bucket, not git). For licensing rationale and the "do-not-upload" list, see [`plans/LEGAL_SOURCES.md`](plans/LEGAL_SOURCES.md).
+
+### Classifications (BM25 + Chroma index)
+
+| Source | Local path | Size / Scope | Licence |
+|---|---|---|---|
+| **WHO ICD-10 2019 International** (ClaML XML) | `data/icd10/icd102019en.xml` | 9.1 MB · **11,243 category codes** | WHO classification — free with attribution |
+| **CDC ICD-10-CM FY2026** (US clinical modification, billing-granular) | `data/icd10/icd10cm_2026/icd10cm-codes-2026.txt` | 6.1 MB · **74,719 codes** | US Government — public domain |
+| **WHO ICD-10-CM tabular index 2026** | `data/icd10/icd10cm_2026/icd10cm-order-2026.txt` | 14 MB | US Government — public domain |
+| **WHO ICD-11 license & terms** | `data/legal/icd11-license.pdf` | 5 pg | CC BY-ND 3.0 IGO — commercial use + AI training explicitly permitted |
+| **SNOMED CT India Edition** | _(manual fetch — apply at [NRCeS](https://mlds.ihtsdotools.org/#/landing/IN))_ | full international + India drug extension | Free in India (member country) |
+
+### Indian clinical guidelines (LLM Wiki synthesis sources)
+
+| Source | Local path | Pages | Used for |
+|---|---|---|---|
+| **MoHFW — Standard Treatment Guidelines: Hypertension** | `data/mohfw/Hypertension_full.pdf` | **152** | Hypertension wiki page (Week 1 seed) |
+| **ICMR — Type-1 Diabetes Management Guidelines** | `data/icmr/type1_diabetes.pdf` | **173** | T1D wiki page |
+| **ICMR — Type-2 Diabetes Guidelines 2018** | `data/icmr/type2_diabetes_2018.pdf` | **82** | T2D wiki page (Week 1 seed) |
+| **ICMR — Treatment Guidelines for Antimicrobial Use in Common Syndromes 2022** | `data/icmr/amr_treatment_2022_full.pdf` | **168** | CAP / UTI / sepsis / skin / CNS / GI infection pages |
+| **ICMR — Diagnosis & Management of Carbapenem-Resistant Organisms 2022** | `data/icmr/cro_diagnosis_2022.pdf` | **24** | AMR escalation logic, handover red flags |
+| **ICMR — Standard Treatment Workflows Vol 3 (2022)** | `data/icmr/stw_vol3_2022.pdf` | **80** | Broad cross-condition workflows |
+| **AIIMS Rishikesh — Standard Treatment Guidelines Manual** | `data/mohfw/aiims_rishikesh_stg.pdf` | **431** | Cross-specialty reference; back-stop when ICMR is silent |
+
+> **Wiki authorship rule:** these PDFs are *synthesis sources*, not the wiki. You **paraphrase + cite** them in markdown pages under `wiki/`. Never paste paragraphs verbatim — that's a derivative work and inherits any restrictions on the source. Citations go in each page's frontmatter (`source:` field — see [`wiki/README.md`](wiki/README.md)).
+
+### Drug data
+
+| Source | Local path | Scope | Licence |
+|---|---|---|---|
+| **National Formulary of India, 5th edn (2016)** | `data/nfi/NFI_2016.pdf` | 60 pg excerpt (full edn via IPC on request) | Government of India — open |
+| **WHO Model List of Essential Medicines, 23rd edn (2023)** | `data/who/WHO_EML_23_2023.pdf` | 71 pg · ~600 medicines | CC BY-NC-SA 3.0 IGO (re-license for commercial) |
+| **openFDA drug label sample** (live API) | `data/openfda/amlodipine_sample.json` | 238 amlodipine label hits | US Gov — public domain |
+| **RxNorm / Loinc / WHO ATC** | _(manual — see `scripts/fetch_data.sh`)_ | optional cross-mapping | Free with attribution |
+
+### Total today
+
+**~91 MB · 14 files · 1,521 pages of guideline PDFs · 85,962 ICD codes ready to index.**
+
+### What we deliberately did NOT download
+
+- ❌ **DSM-5 / DSM-5-TR** — APA all-rights-reserved; explicitly forbidden in generative AI without paid licence
+- ❌ **British National Formulary (BNF)** — proprietary
+- ❌ **NICE guidelines** — UK Open Content Licence is UK-only; international use needs a fee
+- ❌ **MIMS India / CIMS** — paid commercial
+- ❌ Any medical textbook (Harrison's, Davidson's, Robbins, KDT, etc.) — copyrighted
+- ❌ UpToDate / DynaMed / BMJ Best Practice — subscription proprietary
+
+See [`plans/LEGAL_SOURCES.md`](plans/LEGAL_SOURCES.md) for the full rationale and replacement strategy.
 
 ---
 
