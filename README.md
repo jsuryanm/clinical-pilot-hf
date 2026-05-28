@@ -10,21 +10,28 @@ Indian doctors spend **2–3 hours every day** on paperwork. Nurses spend hours 
 
 None of this work requires medical judgment. It is mechanical, repetitive, and automatable.
 
-**What this system does:** Seven AI agents handle the administrative layer of hospital operations — documentation, appointments, rostering, handovers, discharge, and follow-up — while doctors and nurses stay in control of every clinical decision.
+**What this system does:** A suite of AI agents handles the administrative layer of hospital operations — documentation, appointments, rostering, handovers, discharge, and follow-up — while doctors and nurses stay in control of every clinical decision.
+
+> **Hackathon scope (2 weeks, 3 people):** we ship the three agents that solve the three biggest pain points — **Documentation**, **Appointment**, and **Duty Rostering**. The other agents (Handover, Discharge, Post-Discharge Follow-Up, Clerical, Wiki Maintenance) are architected and routable through the orchestrator, but described as "coming soon" in the demo. The full scope cut-list lives in [`plans/PLAN.md`](plans/PLAN.md).
 
 ---
 
 ## Core Features
 
-| Feature | What it does |
-|---|---|
-| **Clinical Documentation** | Doctor consults normally. Whisper transcribes audio. Agent drafts a complete SOAP note with ICD-10 codes and guideline suggestions in under 60 seconds. Doctor reviews and approves. |
-| **Appointment Management** | Patients book, change, and cancel via WhatsApp. Agent checks availability, confirms slots, sends reminders, and manages waitlists automatically. |
-| **Duty Rostering** | Generates a 14-day roster for 20+ staff in under 5 minutes. Handles leave, certifications, and shift limits. Finds sick-call replacements in under 15 minutes. |
-| **Shift Handover** | At shift end, agent reads all vitals and clinical notes and produces a prioritised patient brief. Incoming nurse reads for 5 minutes instead of 45. |
-| **Discharge Coordination** | When a patient is cleared for discharge, agent triggers pharmacy, family notification, follow-up booking, and billing simultaneously. Target: patient leaves within 90 minutes. |
-| **Post-Discharge Follow-Up** | Automated WhatsApp check-in at 72 hours. Agent reads the patient's reply and routes clinical concerns to the outpatient team. |
-| **Insurance & Referrals** | Automatically drafts referral letters and insurance claim summaries from the SOAP note. Placed in doctor's approval queue. |
+Legend: ✅ shipping in hackathon · ⏳ coming soon (architected, not built) · ❌ explicitly out of scope for this hackathon
+
+| Feature | Status | What it does |
+|---|---|---|
+| **Clinical Documentation** | ✅ | Doctor consults normally. Whisper transcribes audio. Agent drafts a complete SOAP note with ICD-10 codes and guideline suggestions in under 60 seconds. Doctor reviews and approves. |
+| **Appointment Management** | ✅ | Patients book, change, and cancel via a chat widget (WhatsApp-styled). Agent checks Google Calendar availability, confirms slots via email, sends reminders, and manages waitlists. |
+| **Duty Rostering** | ✅ | Generates a 14-day roster for 20+ staff in under 1 minute using a greedy heuristic. Handles leave, certifications, and shift limits. Finds sick-call replacements in under 15 minutes. |
+| **Shift Handover** | ⏳ | Will read all vitals and clinical notes and produce a prioritised patient brief at shift end. |
+| **Discharge Coordination** | ⏳ | Will fan out to pharmacy, family notification, follow-up booking, and billing in parallel. A 2-of-5 stream teaser may be shown in the demo. |
+| **Post-Discharge Follow-Up** | ⏳ | Will send a check-in at 72 hours and route clinical replies to the outpatient team. |
+| **Insurance & Referrals** | ❌ | Cut from hackathon — complex edge cases, not the core demo story. |
+| **WhatsApp Business API** | ❌ | Cut from hackathon — Meta approval takes days. Demo uses a Gradio chat widget on the same handler code path. Production WhatsApp is a post-hackathon swap. |
+| **Antibiotic Stewardship** | ❌ | Cut — requires culture-result integration and clinical validation. |
+| **ABDM / ABHA integration, multi-hospital tenancy** | ❌ | Out of scope until there is a paying customer asking. |
 
 ---
 
@@ -49,6 +56,7 @@ Andrej Karpathy's LLM Wiki pattern solves this by having the AI maintain a struc
 | **Vector + BM25 RAG** | ICD-10 / ICD-10-CM codes (74,000+), National Formulary of India, openFDA drug labels, SNOMED CT India Edition (incl. mental-health classifications via ICD-10 Chapter V) | Too large for the wiki; needs keyword-precise lookup |
 | **PostgreSQL** | Appointments, lab results, roster history | Structured data that is better queried with SQL |
 | **LangGraph State** | Current session data | In-memory working context for the active workflow |
+| **Agent Memory** — short-term: **LangGraph `PostgresSaver`** · long-term: **Mem0 (self-hosted)** | Thread checkpoints + multi-turn chat history (short-term); learned doctor/patient/staff preferences across sessions (long-term) | Resume / replay graph runs, and let the agents get smarter about each user without retraining |
 
 > **Note on DSM-5:** an earlier draft referenced DSM-5 here. APA copyright forbids ingesting DSM content into generative AI without a paid licence. We use **ICD-10 Chapter V (F00–F99) / ICD-11 Chapter 06** for mental-health classification instead, which are WHO-licensed and free. See [`plans/LEGAL_SOURCES.md`](plans/LEGAL_SOURCES.md) for the full rationale and the "do-not-upload" list.
 
@@ -156,14 +164,13 @@ No internet / Offline demo                          →  Qwen2.5 32B via Ollama
 All agents are nodes in a **LangGraph** state graph. The Orchestrator classifies every incoming request and routes it to the right agent. Agents share a single typed state object that flows through the graph and accumulates updates at each step.
 
 ```
-Incoming Signal (WhatsApp / Voice / Form / Calendar / Timer)
+Incoming Signal (Chat widget / Voice / Form / Calendar / Timer)
          ↓
    [ Orchestrator ]
          ↓
-  ┌──────┬──────┬────────┬──────────┬───────────┐
-  Doc   Appt  Roster  Handover  Discharge  Clerical
-  Agent Agent  Agent    Agent     Agent      Agent
-         ↓ (all read and write to)
+  ┌──────┬──────┬────────┬─────────────┬─────────────┬────────────┐
+  Doc ✅  Appt✅  Roster✅  Handover ⏳   Discharge ⏳   Clerical ⏳
+         ↓ (shipping agents read and write to)
    [ Four-Layer Memory System ]
 ```
 
@@ -173,29 +180,29 @@ Every agent output that affects a patient requires **human approval** before it 
 
 ## Agents — Goals and Responsibilities
 
-### Orchestrator
+### Orchestrator ✅
 Classifies every incoming signal and routes it to the right agent. Coordinates multi-step workflows. Handles errors and escalations.
 
-### Documentation Agent
+### Documentation Agent ✅ (shipping)
 Reads the patient's history from the wiki, retrieves the relevant guidelines and ICD-10 codes, and drafts a SOAP note. Surfaces guideline suggestions inline. Updates the patient wiki page on approval.
 
-### Appointment Agent
-Parses booking requests from WhatsApp or web forms. Checks Google Calendar availability. Books slots, sends confirmations, queues reminders, manages waitlists, and handles no-shows.
+### Appointment Agent ✅ (shipping)
+Parses booking requests from the chat widget (or, post-hackathon, WhatsApp). Checks Google Calendar availability. Books slots, sends confirmations via Gmail, queues Celery reminders, manages waitlists, and handles no-shows.
 
-### Rostering Agent
-Reads leave requests and staff certifications from Google Drive. Generates a fair, constraint-satisfying roster. Finds real-time sick-call replacements. Publishes roster and sends individual schedules.
+### Rostering Agent ✅ (shipping)
+Reads staff certifications and leave from a CSV (Google Drive integration is post-hackathon). Generates a fair, constraint-satisfying roster using a greedy heuristic (OR-Tools is post-hackathon). Finds real-time sick-call replacements.
 
-### Handover Agent
-Reads shift vitals, medication logs, and clinical notes. Identifies deteriorating patients. Generates a prioritised handover brief. Updates patient wiki pages.
+### Handover Agent ⏳ (coming soon)
+Will read shift vitals, medication logs, and clinical notes. Will identify deteriorating patients and generate a prioritised handover brief. Stubbed in the orchestrator for the hackathon.
 
-### Discharge Agent
-Triggers all discharge tasks in parallel the moment a patient is marked ready: discharge summary, pharmacy, family, transport, billing, and follow-up appointment.
+### Discharge Agent ⏳ (coming soon)
+Will trigger all discharge tasks in parallel: discharge summary, pharmacy, family, billing, follow-up. The demo may show a 2-of-5 stream teaser (summary + family notification).
 
-### Clerical Agent
-Drafts referral letters and insurance claim summaries. Sends post-visit patient summaries. Handles inbound FAQ messages. Routes clinical replies to the right team.
+### Clerical Agent ⏳ (coming soon)
+Will draft referral letters, send post-visit patient summaries, and route inbound FAQ messages. Stubbed for the hackathon.
 
-### Wiki Maintenance Agent
-Ingests new guidelines and updates wiki pages. Runs periodic lint checks to find contradictions, stale content, and broken cross-references.
+### Wiki Maintenance Agent ⏳ (coming soon)
+Will ingest new guidelines and update wiki pages; lint for contradictions, stale content, broken cross-references. Stubbed for the hackathon.
 
 ---
 
@@ -224,9 +231,9 @@ Examples: `SOAPNoteDraft`, `BookingResult`, `RosterResult`, `HandoverBrief`, `Di
 
 | Server | URL | Used By |
 |---|---|---|
-| Google Calendar | `calendarmcp.googleapis.com` | Appointment Agent, Discharge Agent |
-| Gmail | `gmailmcp.googleapis.com` | Clerical Agent, Appointment Agent |
-| Google Drive | `drivemcp.googleapis.com` | Rostering Agent, Wiki Maintenance Agent |
+| Google Calendar | `calendarmcp.googleapis.com` | Appointment Agent |
+| Gmail | `gmailmcp.googleapis.com` | Appointment Agent (booking confirmations + T-24h reminders) |
+| Google Drive | `drivemcp.googleapis.com` | (post-hackathon — Rostering reads a CSV from `data/` for the demo) |
 | Context7 | `mcp.context7.com` | Development — live library docs for LangGraph, FastAPI |
 | Hugging Face | `huggingface.co/mcp` | Model discovery for Whisper variants |
 
@@ -266,6 +273,8 @@ Examples: `SOAPNoteDraft`, `BookingResult`, `RosterResult`, `HandoverBrief`, `Di
 | **Pydantic v2** | Validates all agent structured outputs at runtime |
 | **PostgreSQL** | Patient records, appointment history, staff records |
 | **Celery + Redis** | Reminder scheduling and background task queue |
+| **LangGraph `PostgresSaver`** | Short-term agent memory — graph checkpoints, replay, multi-turn chat threads |
+| **Mem0 (self-hosted OSS)** | Long-term agent memory — learned doctor / patient / staff preferences across sessions. Backed by Postgres + Qdrant. |
 
 ### AI & Retrieval
 
@@ -287,18 +296,18 @@ Examples: `SOAPNoteDraft`, `BookingResult`, `RosterResult`, `HandoverBrief`, `Di
 
 | Tool | Reason |
 |---|---|
-| **Google Calendar / Gmail / Drive MCP** | Free official hosted MCP servers for calendar, email, and document storage |
-| **WhatsApp Business API** | Primary patient communication channel in India across all demographics |
+| **Google Calendar / Gmail MCP** | Free official hosted MCP servers for calendar and email |
+| **Gradio chat widget** | Stand-in for WhatsApp during the hackathon — same handler code path; WhatsApp Business API is a post-hackathon swap once Meta approves the number |
 
 ---
 
 ## Deployment
 
-### Hugging Face Spaces (Frontend — Free)
-The Gradio app deploys to Hugging Face Spaces. It requires a `requirements.txt` and an `app.py`. The Space builds on every push. Set the backend URL and API keys via the Spaces Secrets panel.
+### Hugging Face Spaces (Hackathon target — Free)
+The Gradio app deploys to Hugging Face Spaces. It requires a `requirements.txt` and an `app.py`. The Space builds on every push. Set the backend URL and API keys via the Spaces Secrets panel. **HF Spaces is the only deploy target for the hackathon demo.**
 
-### AWS Free Tier (Backend — Free for 12 Months)
-One **t2.micro EC2 instance** runs FastAPI, Redis, and Celery via Docker Compose. PostgreSQL runs on a **db.t2.micro RDS instance**. Both are free for 750 hours/month for 12 months. SSL via Let's Encrypt.
+### AWS Free Tier (Post-hackathon)
+For production, a **t2.micro EC2 instance** runs FastAPI, Redis, and Celery via Docker Compose. PostgreSQL runs on a **db.t2.micro RDS instance**. Both are free for 750 hours/month for 12 months. SSL via Let's Encrypt. Not in the hackathon scope.
 
 **Total infrastructure cost at hackathon scale: ~$0**
 
@@ -306,14 +315,35 @@ One **t2.micro EC2 instance** runs FastAPI, Redis, and Celery via Docker Compose
 
 ## MVP Roadmap
 
-**Week 1 — Documentation**
-Documentation Agent, Whisper integration, LLM Wiki with 5 condition pages, FastAPI backend, Gradio doctor dashboard.
+**Week 1 — Documentation Agent (doctor's biggest pain point)**
+- Whisper transcription of consultation audio
+- LLM Wiki with 5 seeded condition pages
+- SOAP note draft with ICD-10 codes in under 60 seconds
+- Doctor approval UI in Gradio
+- PostgreSQL patient records
 
-**Week 2 — Appointments**
-Appointment Agent, Google Calendar and Gmail MCP, Celery reminders, waitlist logic, PostgreSQL patient records.
+**Week 2 — Appointment Agent + Duty Rostering Agent (nurse / admin pain points)**
+- Google Calendar MCP for slot availability
+- Booking confirmation email via Gmail MCP
+- Celery reminder queue (T-24h email, T-1h chat)
+- Gradio chat widget (stand-in for WhatsApp during demo)
+- Greedy 14-day roster generation from a staff CSV
+- Sick-call replacement finder
 
-**After Hackathon (in order)**
-Rostering → Handover → Discharge → Post-Discharge Follow-Up → Insurance/Referral automation → ABDM national health ID integration.
+The three shipping agents above, working together, address the three biggest pain points and make for a compelling demo. The remaining agents (Handover, Discharge, Post-Discharge Follow-Up, Clerical, Wiki Maintenance) are routable through the orchestrator and described as "coming soon" — not fully implemented.
+
+**Post-Hackathon (in order)**
+1. Handover Agent
+2. Discharge Agent (full 5-stream fan-out)
+3. Post-Discharge 72h Follow-Up
+4. Clerical Agent (referrals, FAQ classification)
+5. Wiki Maintenance Agent
+6. Insurance / Referral automation
+7. WhatsApp Business API production number (one-day swap from the chat widget)
+8. OR-Tools constraint solver upgrade for rostering
+9. Local Ollama fallback path validated end-to-end
+
+**Explicitly out of scope** until there is a paying customer asking: ABDM / ABHA integration, multi-hospital tenancy, Antibiotic Stewardship.
 
 ---
 
