@@ -41,7 +41,7 @@ def upgrade() -> None:
         "proposed", "confirmed", "cancelled", "no_show", "completed", "waitlisted",
         name="booking_status",
     )
-    booking_status.create(op.get_bind(), checkfirst=True)
+    # booking_status.create(op.get_bind(), checkfirst=True)
 
     op.create_table(
         "appointments",
