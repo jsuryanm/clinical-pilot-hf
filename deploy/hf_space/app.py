@@ -28,7 +28,7 @@ BACKEND_URL = os.getenv("HF_SPACE_BACKEND_URL", "http://localhost:8000")
 
 
 def build_app() -> gr.Blocks:
-    with gr.Blocks(title="CliniqAI", theme=gr.themes.Soft()) as demo:
+    with gr.Blocks(title="CliniqAI") as demo:
         gr.Markdown(
             f"# 🪶 CliniqAI\nClinical operations AI for Indian hospitals. "
             f"Backend: `{BACKEND_URL}`"
@@ -44,4 +44,9 @@ def build_app() -> gr.Blocks:
 
 
 if __name__ == "__main__":
-    build_app().launch(server_name="0.0.0.0", server_port=7860)
+    build_app().launch(
+        server_name="0.0.0.0",
+        server_port=7860,
+        theme=gr.themes.Soft(),
+        share=True
+    )
