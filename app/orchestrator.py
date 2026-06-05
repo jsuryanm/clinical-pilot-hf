@@ -107,9 +107,17 @@ def doc_node(state: CliniqState) -> dict[str, Any]:
 
 
 def appt_node(state: CliniqState) -> dict[str, Any]:
-    # TODO(Person B): replace with app.agents.appointment.api.book(...)
-    booking = fake_booking()
-    return {"booking": booking, "current_agent": "appointment"}
+    utt = ""
+    if state.get("messages"):
+        utt = state["messages"][-1].get("content", "")
+    try:
+        from app.agents.appointment.api import handle_inbound_message
+        draft = handle_inbound_message(channel="web", payload={"from": "orchestrator", "body": utt})
+        return {"communication": draft, "current_agent": "appointment"}
+    except Exception:
+        log.warning("orchestrator.appt_node_fallback", exc_info=True)
+        booking = fake_booking()
+        return {"booking": booking, "current_agent": "appointment"}
 
 
 def roster_node(state: CliniqState) -> dict[str, Any]:
@@ -123,13 +131,23 @@ def handover_node(state: CliniqState) -> dict[str, Any]:
 
 
 def discharge_node(state: CliniqState) -> dict[str, Any]:
-    # TODO(Person B): replace with app.agents.discharge.api.initiate_discharge(...)
-    return {"discharge": fake_discharge(), "current_agent": "discharge"}
+    patient_id = state.get("patient_id", "p-001")
+    try:
+        from app.agents.discharge.api import initiate_discharge
+        return {"discharge": initiate_discharge(patient_id), "current_agent": "discharge"}
+    except Exception:
+        log.warning("orchestrator.discharge_node_fallback", exc_info=True)
+        return {"discharge": fake_discharge(), "current_agent": "discharge"}
 
 
 def clerical_node(state: CliniqState) -> dict[str, Any]:
-    # TODO(Person B): replace with app.agents.clerical.api.draft_referral(...)
-    return {"communication": fake_referral_letter(), "current_agent": "clerical"}
+    try:
+        from app.agents.clerical.api import draft_referral
+        draft = draft_referral(soap_id="soap-001", receiving_specialist="General")
+        return {"communication": draft, "current_agent": "clerical"}
+    except Exception:
+        log.warning("orchestrator.clerical_node_fallback", exc_info=True)
+        return {"communication": fake_referral_letter(), "current_agent": "clerical"}
 
 
 def wiki_maint_node(state: CliniqState) -> dict[str, Any]:
