@@ -44,3 +44,5 @@ respx
 
 unstructured
 pypdf
+mem0ai
+structlog

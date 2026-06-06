@@ -15,8 +15,5 @@ def build_tab() -> gr.Blocks:
             "Type as if you were the patient on WhatsApp. The same code path runs "
             "as the real webhook. _Owned by Person B — Day-4 deliverable._"
         )
-        gr.ChatInterface(
-            fn=lambda msg, hist: "[stub] Person B wires this to handle_inbound_message().",
-            type="messages",
-        )
+        gr.ChatInterface(fn=lambda msg, hist: "[stub] Person B wires this to handle_inbound_message().",)
     return tab
