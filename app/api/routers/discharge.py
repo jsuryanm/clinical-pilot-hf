@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.agents.discharge.mocks import fake_discharge
+from app.agents.discharge import api as discharge_api
 from app.contracts import DischargeCoordination
 
 router = APIRouter()
@@ -12,14 +12,11 @@ router = APIRouter()
 
 @router.post("/{patient_id}", response_model=DischargeCoordination)
 def initiate(patient_id: str) -> DischargeCoordination:
-    """Fan out the 5 discharge subtasks in parallel.
-
-    TODO(Person B): replace with `app.agents.discharge.api.initiate_discharge(...)`.
-    """
-    return fake_discharge(patient_id=patient_id)
+    """Fan out the 5 discharge subtasks in parallel."""
+    return discharge_api.initiate_discharge(patient_id)
 
 
 @router.get("/{patient_id}/status", response_model=DischargeCoordination)
 def status(patient_id: str) -> DischargeCoordination:
-    """TODO(Person B): poll subtask statuses."""
-    return fake_discharge(patient_id=patient_id)
+    """Return current subtask statuses for an in-progress discharge."""
+    return discharge_api.discharge_status(patient_id)
