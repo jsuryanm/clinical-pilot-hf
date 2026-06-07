@@ -244,3 +244,12 @@ redisdata/
 .DS_Store
 Thumbs.db
 .gradio
+
+# google auth credentials
+credentials
+
+# google mcp setup doc(still testing)
+GOOGLE_MCP.md
+
+# mcp test scripts
+scripts/*.py
