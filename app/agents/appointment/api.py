@@ -91,12 +91,13 @@ def _find_next_available_slot(
 # ---------------------------------------------------------------------------
 
 def _enqueue_reminders(appointment_id: str, slot: datetime) -> list[ReminderJob]:
-    """Schedule T-24h email + T-2h WhatsApp reminders via Celery."""
+    """Schedule T-24h email + T-3h Telegram + T-2h WhatsApp reminders via Celery."""
     from app.agents.appointment.tasks import send_reminder  # avoid circular at module load
 
     jobs: list[ReminderJob] = []
     for channel, delta in [
         (Channel.EMAIL, timedelta(hours=24)),
+        (Channel.TELEGRAM, timedelta(hours=3)),
         (Channel.WHATSAPP, timedelta(hours=2)),
     ]:
         fire_at = slot - delta

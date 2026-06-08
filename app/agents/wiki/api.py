@@ -1,16 +1,18 @@
 """Wiki Maintenance Agent — public API. OWNER: Person A.
 
-For the hackathon only the patient-page read/write path is wired (Day 4). The
-lint pass (``lint_wiki``) stays a stub — it is post-hackathon scope.
+Two wired paths:
 
-Patient pages live under ``wiki/patients/`` (gitignored — synthetic only). On
-every approved encounter we:
+1. **Patient page read/write** (Day 4). On every approved encounter we append
+   the encounter to the patient's markdown page (creating a schema-compliant
+   skeleton on first write) and append an audit record to
+   ``data/wiki_history/<patient_id>.jsonl`` — the clinical audit trail (we keep
+   PHI out of git, so the trail is a local, gitignored append-only log rather
+   than a ``wiki-history`` git branch). Patient pages live under
+   ``wiki/patients/`` (gitignored — synthetic only).
 
-1. append the encounter to the patient's markdown page (creating a schema-
-   compliant skeleton on first write), and
-2. append an audit record to ``data/wiki_history/<patient_id>.jsonl`` — the
-   clinical audit trail (we keep PHI out of git, so the trail is a local,
-   gitignored append-only log rather than a ``wiki-history`` git branch).
+2. **Lint pass** (``lint_wiki``) over the public corpus (conditions / drugs /
+   protocols): missing required frontmatter fields, broken ``[[folder/id]]``
+   cross-refs, and stale pages (``last_updated`` older than 180 days).
 """
 
 from __future__ import annotations
@@ -18,14 +20,25 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from datetime import datetime, timezone
+import re
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import structlog
 
-from app.contracts import PatientWikiPageRef, SOAPNoteDraft, WikiLintReport
+from app.contracts import PatientWikiPageRef, SOAPNoteDraft, WikiLintIssue, WikiLintReport
 
 log = structlog.get_logger(__name__)
+
+_XREF_RE = re.compile(r"\[\[([a-z0-9_\-]+/[a-z0-9_\-]+)\]\]")
+_STALE_AFTER_DAYS = 180
+# Required frontmatter fields by page type (patient pages are excluded from lint).
+_REQUIRED_FIELDS = {
+    "condition": ("type", "id", "title", "last_updated", "source"),
+    "drug": ("type", "id", "title", "last_updated", "source"),
+    "protocol": ("type", "id", "title", "last_updated"),
+}
+_LINT_FOLDERS = ("conditions", "drugs", "protocols")
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
@@ -133,6 +146,73 @@ def _append_audit(
         log.warning("wiki.audit_append_failed", patient_id=patient_id, exc_info=True)
 
 
+def _parse_frontmatter(raw: str) -> dict[str, str]:
+    """Minimal YAML-frontmatter parser (flat scalar keys only)."""
+    if not raw.startswith("---"):
+        return {}
+    parts = raw.split("---", 2)
+    if len(parts) < 3:
+        return {}
+    meta: dict[str, str] = {}
+    for line in parts[1].splitlines():
+        if ":" in line and not line.lstrip().startswith("-"):
+            key, _, val = line.partition(":")
+            meta[key.strip()] = val.strip()
+    return meta
+
+
+def _page_exists(wiki_root: Path, ref: str) -> bool:
+    return (wiki_root / f"{ref}.md").exists()
+
+
 def lint_wiki() -> WikiLintReport:
-    """Run the nightly lint pass (post-hackathon — stub)."""
-    raise NotImplementedError("Person A — post-hackathon")
+    """Lint the public wiki corpus (conditions / drugs / protocols).
+
+    Flags missing required frontmatter fields, broken ``[[folder/id]]``
+    cross-refs, and stale pages (``last_updated`` older than 180 days).
+    Patient pages are excluded (PHI / gitignored).
+    """
+    now = datetime.now(timezone.utc)
+    wiki_root = _wiki_root()
+    issues: list[WikiLintIssue] = []
+
+    for folder in _LINT_FOLDERS:
+        for path in sorted((wiki_root / folder).glob("*.md")):
+            rel = f"{folder}/{path.stem}"
+            raw = path.read_text(encoding="utf-8")
+            meta = _parse_frontmatter(raw)
+            ptype = meta.get("type", folder.rstrip("s"))
+
+            # missing required fields
+            for field in _REQUIRED_FIELDS.get(ptype, ("type", "id", "title", "last_updated")):
+                if not meta.get(field):
+                    issues.append(WikiLintIssue(
+                        page_path=rel, kind="missing_field",
+                        detail=f"missing required frontmatter field '{field}'",
+                    ))
+
+            # stale page
+            last = meta.get("last_updated", "")
+            try:
+                updated = datetime.fromisoformat(last).replace(tzinfo=timezone.utc)
+                if now - updated > timedelta(days=_STALE_AFTER_DAYS):
+                    issues.append(WikiLintIssue(
+                        page_path=rel, kind="stale",
+                        detail=f"last_updated {last} is older than {_STALE_AFTER_DAYS} days",
+                    ))
+            except ValueError:
+                issues.append(WikiLintIssue(
+                    page_path=rel, kind="missing_field",
+                    detail=f"unparseable last_updated: {last!r}",
+                ))
+
+            # broken cross-refs
+            for ref in _XREF_RE.findall(raw):
+                if not _page_exists(wiki_root, ref):
+                    issues.append(WikiLintIssue(
+                        page_path=rel, kind="broken_xref",
+                        detail=f"cross-ref [[{ref}]] has no target page",
+                    ))
+
+    log.info("wiki.lint_done", n_issues=len(issues))
+    return WikiLintReport(generated_at=now, issues=issues)

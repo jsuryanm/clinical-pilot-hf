@@ -1,0 +1,19 @@
+{
+  "id": "gerd-heartburn",
+  "patient_id": "p-009",
+  "transcript": "Doctor: What is troubling you? Patient: Burning in the chest after meals and acid coming up, worse at night when I lie down. Doctor: No weight loss or difficulty swallowing. Start a PPI before breakfast, lose some weight and avoid late meals.",
+  "expected_conditions": [
+    "conditions/gerd"
+  ],
+  "expected_icd10": [
+    "K21.9"
+  ],
+  "expected_assessment_keywords": [
+    "reflux",
+    "gerd"
+  ],
+  "expected_plan_keywords": [
+    "ppi",
+    "omeprazole"
+  ]
+}

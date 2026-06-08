@@ -1,0 +1,19 @@
+{
+  "id": "dengue-fever",
+  "patient_id": "p-010",
+  "transcript": "Doctor: How many days of fever? Patient: Four days of high fever, severe body and joint pains, headache behind the eyes, and a rash. Doctor: Platelets are falling, NS1 positive. This is dengue. Take paracetamol only, lots of fluids, avoid NSAIDs, and daily blood counts. Return for any warning sign.",
+  "expected_conditions": [
+    "conditions/dengue-fever"
+  ],
+  "expected_icd10": [
+    "A90"
+  ],
+  "expected_assessment_keywords": [
+    "dengue",
+    "fever"
+  ],
+  "expected_plan_keywords": [
+    "paracetamol",
+    "fluids"
+  ]
+}

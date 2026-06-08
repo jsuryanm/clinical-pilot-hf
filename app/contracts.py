@@ -42,6 +42,7 @@ class Channel(str, Enum):
     WEB = "web"
     EMAIL = "email"
     PHONE = "phone"
+    TELEGRAM = "telegram"  # additive (Person A) — bot-based notifications
 
 
 class Priority(str, Enum):

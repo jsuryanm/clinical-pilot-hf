@@ -1,0 +1,19 @@
+{
+  "id": "hypothyroid-fatigue",
+  "patient_id": "p-007",
+  "transcript": "Doctor: How are you feeling? Patient: Very tired, gaining weight, cold all the time and constipated for months. Doctor: TSH is 12 and free T4 is low. This is hypothyroidism. We will start levothyroxine and recheck TSH in six weeks.",
+  "expected_conditions": [
+    "conditions/hypothyroidism"
+  ],
+  "expected_icd10": [
+    "E03.9"
+  ],
+  "expected_assessment_keywords": [
+    "hypothyroidism",
+    "tsh"
+  ],
+  "expected_plan_keywords": [
+    "levothyroxine",
+    "tsh"
+  ]
+}

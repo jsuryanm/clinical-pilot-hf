@@ -1,0 +1,19 @@
+{
+  "id": "asthma-exac",
+  "patient_id": "p-005",
+  "transcript": "Doctor: What brought you in? Patient: My asthma is worse since two days, wheezing and breathless at night, using inhaler often. Doctor: RR 24, audible wheeze, SpO2 94. Give salbutamol nebulisation and a short course of oral steroids.",
+  "expected_conditions": [
+    "conditions/asthma-exacerbation"
+  ],
+  "expected_icd10": [
+    "J45.901"
+  ],
+  "expected_assessment_keywords": [
+    "asthma",
+    "exacerbation"
+  ],
+  "expected_plan_keywords": [
+    "salbutamol",
+    "steroid"
+  ]
+}

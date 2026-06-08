@@ -1,0 +1,19 @@
+{
+  "id": "t2dm-review",
+  "patient_id": "p-002",
+  "transcript": "Doctor: How is your diabetes control? Patient: My sugar is high, fasting around 180 and after food 250, and I feel thirsty and tired. Doctor: Your HbA1c is 9.2, so the diabetes is uncontrolled. We will start metformin, review your diet, and check kidney function and your eyes for diabetic complications.",
+  "expected_conditions": [
+    "conditions/type-2-diabetes"
+  ],
+  "expected_icd10": [
+    "E11.9"
+  ],
+  "expected_assessment_keywords": [
+    "diabetes",
+    "hyperglycaemia"
+  ],
+  "expected_plan_keywords": [
+    "metformin",
+    "hba1c"
+  ]
+}
