@@ -38,7 +38,6 @@ def build_tab() -> gr.Blocks:
 
         chatbot = gr.Chatbot(
             label="CliniqAI Appointment Assistant",
-            bubble_full_width=False,
             height=420,
         )
         msg_box = gr.Textbox(

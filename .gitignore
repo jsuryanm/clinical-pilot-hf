@@ -244,3 +244,6 @@ redisdata/
 .DS_Store
 Thumbs.db
 .gradio
+
+# Local verification notes (not committed)
+LIVE_VERIFICATION.md
