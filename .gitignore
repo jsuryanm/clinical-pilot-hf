@@ -245,11 +245,5 @@ redisdata/
 Thumbs.db
 .gradio
 
-# google auth credentials
-credentials
-
-# google mcp setup doc(still testing)
-GOOGLE_MCP.md
-
-# mcp test scripts
-scripts/*.py
+# Local verification notes (not committed)
+LIVE_VERIFICATION.md

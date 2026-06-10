@@ -1,0 +1,19 @@
+{
+  "id": "uti-dysuria",
+  "patient_id": "p-006",
+  "transcript": "Doctor: What symptoms? Patient: Burning during urination and going frequently since two days, some lower abdomen discomfort. No fever, no vaginal discharge. Doctor: Dipstick shows nitrites and leukocytes. Start nitrofurantoin for five days and drink plenty of water.",
+  "expected_conditions": [
+    "conditions/urinary-tract-infection"
+  ],
+  "expected_icd10": [
+    "N39.0"
+  ],
+  "expected_assessment_keywords": [
+    "urinary",
+    "cystitis"
+  ],
+  "expected_plan_keywords": [
+    "nitrofurantoin",
+    "hydration"
+  ]
+}

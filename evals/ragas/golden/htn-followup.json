@@ -1,0 +1,19 @@
+{
+  "id": "htn-followup",
+  "patient_id": "p-001",
+  "transcript": "Doctor: How has your blood pressure been at home? Patient: I stopped my amlodipine last week and I have had headaches and some dizziness. Doctor: Your BP today is 162 over 98, heart rate 84. No chest pain. Let us restart and increase the amlodipine and add another tablet, and you keep a home BP log.",
+  "expected_conditions": [
+    "conditions/hypertension"
+  ],
+  "expected_icd10": [
+    "I10"
+  ],
+  "expected_assessment_keywords": [
+    "hypertension",
+    "uncontrolled"
+  ],
+  "expected_plan_keywords": [
+    "amlodipine",
+    "bp"
+  ]
+}

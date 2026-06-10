@@ -1,0 +1,19 @@
+{
+  "id": "cap-cough",
+  "patient_id": "p-003",
+  "transcript": "Doctor: Tell me about the cough. Patient: Three days of fever, cough with yellow phlegm, and breathlessness. Doctor: Temperature 38.6, respiratory rate 26, crackles in right lower zone, SpO2 93 percent. Likely pneumonia, we will start antibiotics and a chest X-ray.",
+  "expected_conditions": [
+    "conditions/community-acquired-pneumonia"
+  ],
+  "expected_icd10": [
+    "J18.9"
+  ],
+  "expected_assessment_keywords": [
+    "pneumonia",
+    "consolidation"
+  ],
+  "expected_plan_keywords": [
+    "antibiotic",
+    "amoxicillin"
+  ]
+}

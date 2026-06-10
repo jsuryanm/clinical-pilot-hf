@@ -14,9 +14,12 @@ import sys
 from pathlib import Path
 
 # Make `app/...` importable when running from deploy/hf_space/.
+# Insert at the front unconditionally: this file is named app.py, so its own
+# directory (sys.path[0]) would otherwise shadow the real `app` package — which
+# happens once the project is installed editable (repo root already on sys.path,
+# so a presence check would skip the insert).
 ROOT = Path(__file__).resolve().parents[2]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT))
 
 import gradio as gr  # noqa: E402
 

@@ -1,0 +1,19 @@
+{
+  "id": "age-diarrhoea",
+  "patient_id": "p-004",
+  "transcript": "Doctor: When did the loose motions start? Patient: Since yesterday, watery stools six times and two episodes of vomiting. Doctor: Mild dehydration, abdomen soft. Start ORS, zinc, and watch for danger signs. Avoid routine antibiotics.",
+  "expected_conditions": [
+    "conditions/acute-gastroenteritis"
+  ],
+  "expected_icd10": [
+    "A09"
+  ],
+  "expected_assessment_keywords": [
+    "gastroenteritis",
+    "dehydration"
+  ],
+  "expected_plan_keywords": [
+    "ors",
+    "rehydration"
+  ]
+}

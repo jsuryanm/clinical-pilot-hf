@@ -1,0 +1,19 @@
+{
+  "id": "migraine-headache",
+  "patient_id": "p-008",
+  "transcript": "Doctor: Describe the headache. Patient: Throbbing pain on one side, with nausea and I cannot tolerate light, lasts most of a day, few times a month. Doctor: Neurological exam normal. This fits migraine. Use a triptan early in the attack and we will discuss prevention.",
+  "expected_conditions": [
+    "conditions/migraine"
+  ],
+  "expected_icd10": [
+    "G43.909"
+  ],
+  "expected_assessment_keywords": [
+    "migraine",
+    "headache"
+  ],
+  "expected_plan_keywords": [
+    "triptan",
+    "nsaid"
+  ]
+}
