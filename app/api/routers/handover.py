@@ -1,16 +1,27 @@
-"""Handover router — OWNER: Person C."""
+"""Handover router - OWNER: Person C."""
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from datetime import datetime, timezone
 
-from app.agents.handover.mocks import fake_handover
+from fastapi import APIRouter
+from pydantic import BaseModel
+
+from app.agents.handover.api import generate_handover
 from app.contracts import HandoverBrief
 
 router = APIRouter()
 
 
+class GenerateHandoverRequest(BaseModel):
+    ward_id: str = "ward-A"
+    shift_end_ts: datetime | None = None
+
+
 @router.post("/generate", response_model=HandoverBrief)
-def generate(payload: dict) -> HandoverBrief:
-    """TODO(Person C): wire to `app.agents.handover.api.generate_handover(...)`."""
-    return fake_handover(ward_id=payload.get("ward_id", "ward-A"))
+def generate(payload: GenerateHandoverRequest) -> HandoverBrief:
+    """Generate the current ward handover brief."""
+    return generate_handover(
+        ward_id=payload.ward_id,
+        shift_end_ts=payload.shift_end_ts or datetime.now(timezone.utc),
+    )
