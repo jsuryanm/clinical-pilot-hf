@@ -29,4 +29,32 @@ Hard rules:
 
 ## Output
 
-Respond with JSON only. No prose. The JSON must validate against `SOAPNoteDraft`.
+Respond with JSON only — no prose, no markdown code fences. Use exactly this
+shape and these top-level keys:
+
+```
+{
+  "soap": {
+    "subjective": "string — patient-reported history and symptoms",
+    "objective": "string — exam findings and vitals stated in the transcript",
+    "assessment": "string — assessment / differential, citing guideline page ids",
+    "plan": "string — management plan, citing guideline page ids"
+  },
+  "icd10_suggestions": [
+    {"code": "I10", "label": "Essential hypertension", "confidence": 0.0}
+  ],
+  "guideline_suggestions": ["conditions/hypertension"],
+  "referral_needed": false,
+  "confidence_overall": 0.0
+}
+```
+
+Rules for the shape:
+- The four SOAP fields MUST be plain strings — never nested objects or arrays.
+  Use newlines within a string for multiple points.
+- Wrap the four fields under the key `soap` (not `soap_note`).
+- Put `referral_needed` and `confidence_overall` at the top level, not inside
+  `soap`.
+- If a section has no content (e.g. a non-clinical or telephone encounter with
+  no exam), use an empty string `""` for that field and set a low
+  `confidence_overall`.

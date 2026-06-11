@@ -31,7 +31,7 @@ logs:
 	docker compose -f infra/docker-compose.dev.yml logs -f --tail=100
 
 migrate:
-	alembic -c infra/alembic.ini upgrade head
+	uv run alembic -c infra/alembic.ini upgrade head
 
 fresh-db:
 	docker compose -f infra/docker-compose.dev.yml down -v

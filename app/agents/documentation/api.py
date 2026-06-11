@@ -177,6 +177,57 @@ def _parse_json(text: str) -> dict:
     return json.loads(m_text)
 
 
+def _find_soap(payload: dict) -> dict:
+    """Locate the SOAP object regardless of how the model wrapped it.
+
+    Models inconsistently nest the note under "soap", "soap_note", etc., or
+    emit the fields flat at the top level — tolerate all of them.
+    """
+    for key in ("soap", "soap_note", "SOAP", "soapNote", "note"):
+        value = payload.get(key)
+        if isinstance(value, dict):
+            return value
+    return payload  # flat shape
+
+
+def _coerce_field(value: object) -> str:
+    """Render a SOAP field as clean text, whatever shape the model returned.
+
+    Strings pass through; dicts become "key: value" joined by " · "; lists
+    become one bullet per item — so a nested object/array never leaks into the
+    UI as an ugly Python ``repr``.
+    """
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, bool):
+        return str(value)
+    if isinstance(value, (int, float)):
+        return str(value)
+    if isinstance(value, list):
+        return "\n".join(f"- {item}" for item in map(_coerce_field, value) if item)
+    if isinstance(value, dict):
+        parts = [
+            f"{str(k).replace('_', ' ')}: {text}"
+            for k, text in ((k, _coerce_field(v)) for k, v in value.items())
+            if text
+        ]
+        return " · ".join(parts)
+    return str(value).strip()
+
+
+def _pick(soap_in: dict, payload: dict, key: str, default: object) -> object:
+    """Read a top-level field from the SOAP object or the payload root.
+
+    Models sometimes nest referral_needed / confidence_overall / suggestions
+    inside the SOAP wrapper instead of at the top level — check both.
+    """
+    if isinstance(soap_in, dict) and key in soap_in:
+        return soap_in[key]
+    return payload.get(key, default)
+
+
 def _assemble_draft(
     *,
     patient_id: str,
@@ -190,15 +241,15 @@ def _assemble_draft(
     Deterministic fields (ids, timestamps, model) and the citation list are set
     here so the audit trail never depends on the model getting them right.
     """
-    soap_in = payload.get("soap", payload)  # tolerate flat or nested shapes
+    soap_in = _find_soap(payload)
     soap = SOAPSection(
-        subjective=str(soap_in.get("subjective", "")).strip(),
-        objective=str(soap_in.get("objective", "")).strip(),
-        assessment=str(soap_in.get("assessment", "")).strip(),
-        plan=str(soap_in.get("plan", "")).strip(),
+        subjective=_coerce_field(soap_in.get("subjective")),
+        objective=_coerce_field(soap_in.get("objective")),
+        assessment=_coerce_field(soap_in.get("assessment")),
+        plan=_coerce_field(soap_in.get("plan")),
     )
 
-    icd = _coerce_icd(payload.get("icd10_suggestions"), ctx)
+    icd = _coerce_icd(_pick(soap_in, payload, "icd10_suggestions", None), ctx)
     sources = _build_sources(ctx)
 
     return SOAPNoteDraft(
@@ -208,11 +259,13 @@ def _assemble_draft(
         soap=soap,
         icd10_suggestions=icd,
         guideline_suggestions=[
-            str(g) for g in payload.get("guideline_suggestions", []) if str(g).strip()
+            str(g)
+            for g in (_pick(soap_in, payload, "guideline_suggestions", []) or [])
+            if str(g).strip()
         ],
         sources=sources,
-        referral_needed=bool(payload.get("referral_needed", False)),
-        confidence_overall=_clamp(payload.get("confidence_overall", 0.0)),
+        referral_needed=bool(_pick(soap_in, payload, "referral_needed", False)),
+        confidence_overall=_clamp(_pick(soap_in, payload, "confidence_overall", 0.0)),
         transcript_excerpt=transcript[:280],
         model=model,
     )
