@@ -46,7 +46,7 @@ def _run_discharge_summary(patient_id: str, discharge_id: str) -> DischargeSubta
         result = complete(
             task="discharge_summary",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=300,
+            max_tokens=1024,
         )
         return DischargeSubtask(
             name="discharge_summary",
@@ -79,7 +79,7 @@ def _run_pharmacy(patient_id: str, discharge_id: str) -> DischargeSubtask:
             task="discharge_summary",
             messages=[{"role": "user", "content": prompt}],
             json_mode=True,
-            max_tokens=200,
+            max_tokens=1024,
         )
         meds = json.loads(result.text)
         med_count = len(meds) if isinstance(meds, list) else "?"

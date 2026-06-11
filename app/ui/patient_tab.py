@@ -25,7 +25,10 @@ def _chat_fn(message: str, history: list) -> str:
 
 def _submit(user_msg: str, history: list) -> tuple[list, str]:
     reply = _chat_fn(user_msg, history)
-    return history + [[user_msg, reply]], ""
+    history = history or []
+    history.append({"role": "user",      "content": user_msg})
+    history.append({"role": "assistant", "content": reply})
+    return history, ""
 
 
 def build_tab() -> gr.Blocks:

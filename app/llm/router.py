@@ -20,9 +20,13 @@ from typing import Any
 
 import structlog
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 try:
     from litellm import completion as _litellm_completion
-    from litellm.exceptions import APIError, RateLimitError, ServiceUnavailableError
+    from litellm.exceptions import APIError, BadRequestError,RateLimitError, ServiceUnavailableError
 except ImportError:  # pragma: no cover — uv may not be sync'd yet on first clone
     _litellm_completion = None  # type: ignore[assignment]
 
@@ -43,21 +47,23 @@ log = structlog.get_logger(__name__)
 # ---------------------------------------------------------------------------
 
 # task name -> ordered fallback chain (LiteLLM model string)
+# AFTER
+# AFTER — Groq only, llama as internal fallback
 ROUTES: dict[str, list[str]] = {
-    "soap_note":         ["groq/qwen/qwen3-32b",        "openrouter/google/gemma-2-27b-it:free", "ollama/qwen2.5:32b"],
-    "handover":          ["groq/qwen/qwen3-32b",        "openrouter/google/gemma-2-27b-it:free", "ollama/deepseek-r1:32b"],
-    "discharge_summary": ["groq/qwen/qwen3-32b",        "openrouter/google/gemma-2-27b-it:free", "ollama/qwen2.5:32b"],
-    "wiki_update":       ["groq/qwen/qwen3-32b",        "openrouter/google/gemma-2-27b-it:free", "ollama/qwen2.5:32b"],
-    "roster_reason":     ["groq/qwen/qwen3-32b",        "openrouter/openai/gpt-oss-20b:free",     "ollama/qwen2.5:32b"],
-    "routing":           ["groq/llama-3.1-8b-instant",  "openrouter/openai/gpt-oss-20b:free",     "ollama/llama3.1:8b"],
-    "reminder":          ["groq/llama-3.1-8b-instant",  "openrouter/openai/gpt-oss-20b:free",     "ollama/llama3.1:8b"],
-    "faq":               ["groq/llama-3.1-8b-instant",  "openrouter/openai/gpt-oss-20b:free",     "ollama/llama3.1:8b"],
-    "classify_reply":    ["groq/llama-3.1-8b-instant",  "openrouter/openai/gpt-oss-20b:free",     "ollama/llama3.1:8b"],
-    "referral_letter":   ["openrouter/google/gemma-2-27b-it:free", "groq/qwen/qwen3-32b",        "ollama/qwen2.5:32b"],
-    "default":           ["groq/llama-3.1-8b-instant",  "openrouter/google/gemma-2-27b-it:free", "ollama/llama3.1:8b"],
+    "soap_note":         ["groq/qwen/qwen3-32b",       "groq/llama-3.1-8b-instant"],
+    "handover":          ["groq/qwen/qwen3-32b",       "groq/llama-3.1-8b-instant"],
+    "discharge_summary": ["groq/qwen/qwen3-32b",       "groq/llama-3.1-8b-instant"],
+    "wiki_update":       ["groq/qwen/qwen3-32b",       "groq/llama-3.1-8b-instant"],
+    "roster_reason":     ["groq/qwen/qwen3-32b",       "groq/llama-3.1-8b-instant"],
+    "routing":           ["groq/llama-3.1-8b-instant", "groq/qwen-qwen3-32b"],
+    "reminder":          ["groq/llama-3.1-8b-instant", "groq/qwen-qwen3-32b"],
+    "faq":               ["groq/llama-3.1-8b-instant", "groq/qwen-qwen3-32b"],
+    "classify_reply":    ["groq/llama-3.1-8b-instant", "groq/qwen-qwen3-32b"],
+    "referral_letter":   ["groq/qwen-qwen3-32b",       "groq/llama-3.1-8b-instant"],
+    "default":           ["groq/llama-3.1-8b-instant", "groq/qwen-qwen3-32b"],
 }
 
-_RETRY_EXC = (RateLimitError, ServiceUnavailableError, APIError)
+_RETRY_EXC = (RateLimitError, ServiceUnavailableError, APIError, BadRequestError)
 
 
 # ---------------------------------------------------------------------------

@@ -19,11 +19,17 @@ from app.contracts import (
 )
 from app.integrations import calendar_mcp
 from app.llm.router import complete
+from app.db.session import get_session,session_scope          # adjust to your actual session import
+from app.db.models import Patient
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+
 
 log = structlog.get_logger(__name__)
 
 _DOCTOR_CALENDAR = os.getenv("DOCTOR_CALENDAR_ID", "doctor-test@example.com")
 _SLOT_DURATION = 15  # minutes
+_pending_confirmations: dict[str, dict] = {}
 
 
 # ---------------------------------------------------------------------------
@@ -41,6 +47,16 @@ Parse the patient's message and return JSON with these keys:
 Patient message:
 {message}
 """
+
+def _ensure_patient_exists(patient_id: str, session) -> None:
+    """Upsert a minimal patient record so the FK is satisfied on first contact."""
+    stmt = (
+        pg_insert(Patient)
+        .values(id=patient_id, name=f"Patient {patient_id}")
+        .on_conflict_do_nothing(index_elements=["id"])
+    )
+    session.execute(stmt)
+    session.commit()
 
 
 def _parse_intent(message: str) -> dict:
@@ -128,8 +144,29 @@ def handle_inbound_message(
     On booking intent, also calls book() and confirms the slot.
     """
     sender = payload.get("from", "unknown")
-    message = payload.get("body", "")
+    message = payload.get("body", "").strip()
 
+    if sender in _pending_confirmations and message in ("0","1","2"):
+        state = _pending_confirmations.pop(sender)
+        appt_id = state['appt_id']
+
+        if message == "1":
+            body = f"Appointment *{appt_id}* is confirmed. See you soon!"
+        
+        elif message == "0":
+            cancel(appt_id,reason="Patient appointment cancelled")
+            body = f"Your appointment *{appt_id}* has been cancelled.\nReply anytime to book a new one."
+
+        else:
+            _pending_confirmations[sender] = {"appt_id":appt_id}
+            body = "To reschedule, please share your preferred date and time."
+
+        return CommunicationDraft(draft_id=f"comm-{uuid4().hex[:8]}",
+                                  channel=Channel.WHATSAPP if channel == "whatsapp" else Channel.WEB,
+                                  to=sender,
+                                  body=body,
+                                  requires_approval=False) 
+    
     intent_data = _parse_intent(message)
     intent = intent_data.get("intent", "other")
 
@@ -148,10 +185,12 @@ def handle_inbound_message(
 
         # Derive a stable synthetic patient_id from the phone number
         patient_id = f"p-{abs(hash(sender)) % 100000:05d}"
-
+        with session_scope() as session:
+            _ensure_patient_exists(patient_id,session)
         try:
             result = book(patient_id=patient_id, requested_window=(w_start, w_end))
             slot_str = result.slot_iso.strftime("%A %d %b at %I:%M %p")
+            _pending_confirmations[sender] = {"appt_id":result.appointment_id}
             body = (
                 f"Namaste! ✅ Your appointment is confirmed for *{slot_str}*.\n"
                 f"Appointment ID: {result.appointment_id}\n"

@@ -83,8 +83,12 @@ class Appointment(Base):
     slot_iso: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     duration_minutes: Mapped[int] = mapped_column(Integer, default=15)
     status: Mapped[BookingStatusEnum] = mapped_column(
-        SAEnum(BookingStatusEnum, name="booking_status"), default=BookingStatusEnum.PROPOSED
-    )
+        SAEnum(
+            BookingStatusEnum,
+            name="booking_status",
+            values_callable=lambda enum_cls: [e.value for e in enum_cls],),
+        default=BookingStatusEnum.PROPOSED,)
+
     calendar_event_id: Mapped[str | None] = mapped_column(String(120))
     notes: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)

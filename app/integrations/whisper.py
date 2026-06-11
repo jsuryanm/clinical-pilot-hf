@@ -1,13 +1,13 @@
-"""Whisper transcription. OWNER: Person A — Day 2.
+"""Whisper transcription. OWNER: Person A.
 
 Two backends, tried in order:
 
-1. **HF Inference API** (hackathon default) — POST the audio bytes to the
-   hosted ``openai/whisper-large-v3`` endpoint. Needs ``HF_TOKEN``. Fast, no
-   local GPU, but rate-limited on the free tier.
-2. **Local transformers** (documented fallback) — run a ``transformers`` ASR
-   pipeline on-device. Heavier first call (model download) but offline and
-   unmetered. Used automatically when ``HF_TOKEN`` is unset or
+1. **Groq API via LiteLLM** (default) — calls whisper-large-v3-turbo on Groq.
+   Needs ``GROQ_API_KEY``. Fast, no local GPU, reuses the same key already
+   used for LLM calls throughout the project.
+2. **Local transformers** (fallback) — run a ``transformers`` ASR pipeline
+   on-device. Heavier first call (model download) but offline and unmetered.
+   Used automatically when ``GROQ_API_KEY`` is unset or
    ``WHISPER_BACKEND=local``.
 
 Both backends are imported lazily so this module imports cleanly before
@@ -25,17 +25,14 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-import httpx
 import structlog
 
 log = structlog.get_logger(__name__)
 
-_HF_TOKEN = os.getenv("HF_TOKEN", "")
-_HF_MODEL = os.getenv("WHISPER_MODEL", "openai/whisper-large-v3")
-_HF_INFERENCE_URL = os.getenv(
-    "WHISPER_HF_URL", "https://api-inference.huggingface.co/models"
-)
-# "auto" (default) prefers HF when a token is present, else local.
+_GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+_GROQ_WHISPER_MODEL = "groq/whisper-large-v3-turbo"   # LiteLLM model string
+_LOCAL_WHISPER_MODEL = os.getenv("WHISPER_MODEL", "openai/whisper-large-v3-turbo")
+# "auto" prefers groq when GROQ_API_KEY is present, else local.
 _BACKEND = os.getenv("WHISPER_BACKEND", "auto").lower()
 
 
@@ -58,15 +55,15 @@ def transcribe(audio_path: Path | str, language: str = "en") -> str:
     if not path.exists():
         raise FileNotFoundError(f"audio file not found: {path}")
 
-    use_hf = _BACKEND == "hf" or (_BACKEND == "auto" and bool(_HF_TOKEN))
+    use_groq = _BACKEND == "groq" or (_BACKEND == "auto" and bool(_GROQ_API_KEY))
 
-    if use_hf:
+    if use_groq:
         try:
-            return _transcribe_hf(path, language)
-        except Exception as exc:  # noqa: BLE001 — fall back to local on any HF failure
-            if _BACKEND == "hf":
+            return _transcribe_groq(path, language)
+        except Exception as exc:  # noqa: BLE001
+            if _BACKEND == "groq":
                 raise
-            log.warning("whisper.hf_failed_falling_back_local", exc=str(exc))
+            log.warning("whisper.groq_failed_falling_back_local", exc=str(exc))
 
     return _transcribe_local(path, language)
 
@@ -76,25 +73,25 @@ def transcribe(audio_path: Path | str, language: str = "en") -> str:
 # ---------------------------------------------------------------------------
 
 
-def _transcribe_hf(path: Path, language: str) -> str:
-    """Hosted HF Inference API. Posts raw audio bytes, returns {"text": ...}."""
-    if not _HF_TOKEN:
-        raise RuntimeError("HF_TOKEN is not set — cannot use the HF backend")
+def _transcribe_groq(path: Path, language: str) -> str:
+    """Groq Whisper API via LiteLLM — uses GROQ_API_KEY, no GPU needed."""
+    if not _GROQ_API_KEY:
+        raise RuntimeError("GROQ_API_KEY is not set — cannot use Groq Whisper backend")
 
-    url = f"{_HF_INFERENCE_URL}/{_HF_MODEL}"
-    headers = {"Authorization": f"Bearer {_HF_TOKEN}"}
-    audio_bytes = path.read_bytes()
+    try:
+        from litellm import transcription as _litellm_transcription
+    except ImportError as exc:
+        raise RuntimeError("litellm is not installed — run `make install`") from exc
 
-    with httpx.Client(timeout=120) as client:
-        resp = client.post(url, headers=headers, content=audio_bytes)
-        resp.raise_for_status()
-        data = resp.json()
+    with path.open("rb") as audio_file:
+        response = _litellm_transcription(
+            model=_GROQ_WHISPER_MODEL,
+            file=audio_file,
+            **({"language": language} if language else {}),
+        )
 
-    # HF returns {"text": "..."} for ASR; some endpoints nest under a list.
-    if isinstance(data, list) and data:
-        data = data[0]
-    text = (data or {}).get("text", "").strip()
-    log.info("whisper.hf_ok", model=_HF_MODEL, chars=len(text))
+    text = (response.text or "").strip()
+    log.info("whisper.groq_ok", model=_GROQ_WHISPER_MODEL, chars=len(text))
     return text
 
 
@@ -104,13 +101,13 @@ def _transcribe_local(path: Path, language: str) -> str:
         from transformers import pipeline
     except ImportError as exc:  # pragma: no cover — depends on uv sync
         raise RuntimeError(
-            "transformers is not installed and no HF_TOKEN is set — "
-            "run `make install` or set HF_TOKEN to use the hosted endpoint"
+            "transformers is not installed and GROQ_API_KEY is not set — "
+            "run `make install` or set GROQ_API_KEY to use the Groq backend"
         ) from exc
 
     asr = pipeline(
         "automatic-speech-recognition",
-        model=_HF_MODEL,
+        model=_LOCAL_WHISPER_MODEL,
         chunk_length_s=30,  # chunk long consults so memory stays bounded
     )
     result = asr(
@@ -119,7 +116,7 @@ def _transcribe_local(path: Path, language: str) -> str:
         return_timestamps=False,
     )
     text = (result.get("text", "") if isinstance(result, dict) else str(result)).strip()
-    log.info("whisper.local_ok", model=_HF_MODEL, chars=len(text))
+    log.info("whisper.local_ok", model=_LOCAL_WHISPER_MODEL, chars=len(text))
     return text
 
 
