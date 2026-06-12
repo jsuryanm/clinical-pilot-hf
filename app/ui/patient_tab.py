@@ -32,11 +32,18 @@ def _submit(user_msg: str, history: list) -> tuple[list, str]:
 
 
 def build_tab() -> gr.Blocks:
-    with gr.Blocks(theme=gr.themes.Soft()) as tab:
-        gr.Markdown("## 📱 Patient — WhatsApp Simulator")
-        gr.Markdown(
-            "Type as if you were the patient on WhatsApp. "
-            "The same code path runs as the real Twilio webhook."
+    with gr.Blocks() as tab:
+        gr.HTML(
+            '<div class="cq-intro">'
+            '<div class="intro-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" '
+            'stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'
+            '<path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.4 9 9 0 0 1-3.9-.9L3 21l1.9-5.1A8.4 8.4 0 1 1 21 '
+            '11.5Z"/></svg></div>'
+            '<div><h2>Appointment <span class="serif-i">assistant</span> '
+            '<span class="ship-tag">Shipping</span></h2>'
+            "<p>Patients book, change, or cancel conversationally — warmer and simpler than the "
+            "clinician surfaces. The same handler runs as the real Twilio webhook (WhatsApp in "
+            "production).</p></div></div>"
         )
 
         chatbot = gr.Chatbot(

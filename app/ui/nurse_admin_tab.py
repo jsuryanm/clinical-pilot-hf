@@ -196,9 +196,20 @@ def _initiate_discharge(patient_id: str) -> tuple[str, list]:
 
 def build_tab() -> gr.Blocks:
     with gr.Blocks() as tab:
-        gr.Markdown("# 🩺 Nurse & Admin")
+        gr.HTML(
+            '<div class="cq-intro">'
+            '<div class="intro-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" '
+            'stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'
+            '<path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1ZM8 6H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12'
+            'a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-2M9 12h6M9 16h4"/></svg></div>'
+            '<div><h2>Operations <span class="serif-i">console</span> '
+            '<span class="ship-tag">Shipping</span></h2>'
+            "<p>Run handover, rostering and discharge from one dense, scannable console. "
+            "Rostering ships today; handover and discharge are wired through the orchestrator and "
+            "previewed here.</p></div></div>"
+        )
 
-        with gr.Tabs():
+        with gr.Tabs(elem_id="nurse-subnav"):
 
             # ----------------------------------------------------------------
             # Handover

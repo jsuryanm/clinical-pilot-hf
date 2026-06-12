@@ -247,3 +247,7 @@ Thumbs.db
 
 # Local verification notes (not committed)
 LIVE_VERIFICATION.md
+Clinical-pilot-HF.zip
+
+# Design handoff bundle (reference only — not shipped)
+design_handoff_cliniqai/

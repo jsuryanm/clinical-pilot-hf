@@ -96,11 +96,16 @@ def _reject():
 
 def build_tab() -> gr.Blocks:
     with gr.Blocks() as tab:
-        gr.Markdown("# 👨‍⚕️ Doctor — Consultation Documentation")
-        gr.Markdown(
-            "Record or upload the consult (or paste a transcript), generate the "
-            "AI SOAP draft, edit any field, then **Approve** to write it to the "
-            "patient's wiki page."
+        gr.HTML(
+            '<div class="cq-intro">'
+            '<div class="intro-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" '
+            'stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'
+            '<path d="M6 3v6a4 4 0 0 0 8 0V3M4.5 3h3M12.5 3h3M10 17a4 4 0 0 0 4-4M20 15a2 2 0 1 1-4 0 '
+            '2 2 0 0 1 4 0Z"/></svg></div>'
+            '<div><h2>Consultation <span class="serif-i">documentation</span> '
+            '<span class="ship-tag">Shipping</span></h2>'
+            "<p>Turn a spoken or typed consult into an approved SOAP note in under 60 seconds. "
+            "You edit and approve — the note is never auto-filed.</p></div></div>"
         )
 
         draft_state = gr.State(None)
