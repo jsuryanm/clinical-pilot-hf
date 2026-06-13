@@ -58,6 +58,25 @@ def _ensure_patient_exists(patient_id: str, session) -> None:
     session.execute(stmt)
     session.commit()
 
+# ---------------------------------------------------------------------------
+# Telegram — immediate event notifications (not to be confused with the
+# T-3h timed reminder that Celery enqueues; these fire at the moment of
+# the event so the clinic always gets an instant push).
+# ---------------------------------------------------------------------------
+
+def _notify_telegram(body: str) -> None:
+    """Best-effort immediate Telegram push. Never raises into the caller."""
+    try:
+        from app.integrations.telegram import send as tg_send
+        result = tg_send(body=body)
+        if result.get("status") == "stub":
+            log.warning(
+                "appointment.telegram_stub",
+                hint="Set TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID in .env.local",
+            )
+    except Exception:
+        log.warning("appointment.telegram_notify_failed", exc_info=True)
+
 
 def _parse_intent(message: str) -> dict:
     try:
@@ -129,6 +148,11 @@ def _enqueue_reminders(appointment_id: str, slot: datetime) -> list[ReminderJob]
                 fire_at=fire_at,
                 enqueued=True,
             ))
+        else:
+            log.warning("appointment.remainder_skipped_slot_too_soon",
+                        channel=channel.value,
+                        fire_at=fire_at.isoformat(),
+                        slot=slot.isoformat())
     return jobs
 
 
@@ -152,7 +176,12 @@ def handle_inbound_message(
 
         if message == "1":
             body = f"Appointment *{appt_id}* is confirmed. See you soon!"
-        
+            _notify_telegram(           # ADD
+                f"APPOINTMENT CONFIRMED BY PATIENT\n"
+                f"ID    : {appt_id}\n"
+                f"From  : {sender}"
+            )
+
         elif message == "0":
             cancel(appt_id,reason="Patient appointment cancelled")
             body = f"Your appointment *{appt_id}* has been cancelled.\nReply anytime to book a new one."
@@ -160,7 +189,11 @@ def handle_inbound_message(
         else:
             _pending_confirmations[sender] = {"appt_id":appt_id}
             body = "To reschedule, please share your preferred date and time."
-
+            _notify_telegram(           # ADD
+                f"RESCHEDULE REQUESTED\n"
+                f"ID  : {appt_id}\n"
+                f"From: {sender}"
+            )
         return CommunicationDraft(draft_id=f"comm-{uuid4().hex[:8]}",
                                   channel=Channel.WHATSAPP if channel == "whatsapp" else Channel.WEB,
                                   to=sender,
@@ -249,7 +282,15 @@ def book(
 
     appt_id = f"appt-{uuid4().hex[:8]}"
     reminder_jobs = _enqueue_reminders(appt_id, slot)
-
+    
+    _notify_telegram(
+        f"APPOINTMENT BOOKED\n"
+        f"Patient : {patient_id}\n"
+        f"Slot    : {slot.strftime('%A %d %b %Y at %I:%M %p UTC')}\n"
+        f"Duration: {_SLOT_DURATION} min\n"
+        f"ID      : {appt_id}"
+    )
+    
     log.info("appointment.booked", appt_id=appt_id, patient_id=patient_id, slot=slot.isoformat())
     return BookingResult(
         appointment_id=appt_id,
@@ -272,6 +313,13 @@ def cancel(appointment_id: str, reason: str) -> BookingResult:
     Hackathon: returns a CANCELLED BookingResult immediately.
     """
     log.info("appointment.cancelled", appt_id=appointment_id, reason=reason)
+    
+    _notify_telegram(
+        f"APPOINTMENT CANCELLED\n"
+        f"ID    : {appointment_id}\n"
+        f"Reason: {reason}"
+    )
+
     return BookingResult(
         appointment_id=appointment_id,
         patient_id="unknown",
