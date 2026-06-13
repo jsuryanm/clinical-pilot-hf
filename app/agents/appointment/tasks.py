@@ -82,6 +82,9 @@ def send_reminder(self, appointment_id: str, channel: str) -> dict:
             from app.integrations.telegram import send as tg_send
             # TODO: load patient telegram chat_id from DB; uses TELEGRAM_CHAT_ID default
             result = tg_send(body=body)
+            if result.get("status") == "stub":
+                log.warning("tasks.reminder_stubbed", appt_id=appointment_id, channel=channel)
+                return {"appointment_id": appointment_id, "channel": channel, "sent": False, **result}
         else:
             from app.integrations.whatsapp import send as wa_send
             # TODO: load patient phone from DB

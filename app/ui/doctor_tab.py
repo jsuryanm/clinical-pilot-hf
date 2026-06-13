@@ -76,22 +76,35 @@ def _draft(patient_id: str, audio_path: str | None, transcript: str):
     )
 
 
-def _approve(draft: SOAPNoteDraft | None, subj: str, obj: str, assess: str, plan: str):
+# AFTER
+def _approve(draft_raw, subj: str, obj: str, assess: str, plan: str):
     """Persist the (possibly edited) draft to the patient's wiki page."""
-    if draft is None:
-        return "❌ Nothing to approve — draft a note first."
+    if draft_raw is None:
+        msg = "❌ Nothing to approve — draft a note first."
+        return msg, msg
+    # Gradio can deserialize the Pydantic model from gr.State back to a plain dict
+    # (especially with queue=True or multi-worker setups). Re-hydrate defensively.
+    if isinstance(draft_raw, dict):
+        try:
+            draft = SOAPNoteDraft.model_validate(draft_raw)
+        except Exception as exc:
+            msg = f"❌ Approve failed (state deserialization error): {exc}"
+            return msg, msg
+    else:
+        draft = draft_raw
     try:
         ref = approve_draft(
             draft,
             edits={"subjective": subj, "objective": obj, "assessment": assess, "plan": plan},
         )
     except Exception as exc:  # noqa: BLE001
-        return f"❌ Approve failed: {exc}"
-    return f"✅ Written to `{ref.page_path}` (version `{ref.version}`)."
-
+        msg = f"❌ Approve failed: {exc}"
+        return msg, msg
+    msg = f"✅ Written to `{ref.page_path}` (version `{ref.version}`)."
+    return msg, msg
 
 def _reject():
-    return (*_BLANK, "", None, "🗑️ Draft discarded.")
+    return (*_BLANK, "", None, "🗑️ Draft discarded.","")
 
 
 def build_tab() -> gr.Blocks:
@@ -130,6 +143,7 @@ def build_tab() -> gr.Blocks:
                 with gr.Row():
                     approve_btn = gr.Button("Approve", variant="primary")
                     reject_btn = gr.Button("Reject", variant="stop")
+                approve_result = gr.Markdown("")
 
         draft_btn.click(
             fn=_draft,
@@ -139,11 +153,11 @@ def build_tab() -> gr.Blocks:
         approve_btn.click(
             fn=_approve,
             inputs=[draft_state, subjective, objective, assessment, plan],
-            outputs=[status],
+            outputs=[status,approve_result],
         )
         reject_btn.click(
             fn=_reject,
-            outputs=[subjective, objective, assessment, plan, citations, draft_state, status],
+            outputs=[subjective, objective, assessment, plan, citations, draft_state, status,approve_result],
         )
 
     return tab
