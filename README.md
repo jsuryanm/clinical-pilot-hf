@@ -175,6 +175,7 @@ PYTHONHASHSEED=0 uv run pytest -q
 
 Built by:
 
+- [@drumilhved](https://huggingface.co/drumilhved)
 - [@someonesphantom](https://huggingface.co/someonesphantom)
 - [@Jayasuryan0419](https://huggingface.co/Jayasuryan0419)
 
