@@ -6,7 +6,7 @@ Built for the **[Hugging Face "Build Small" Hackathon](https://huggingface.co/bu
 
 ## 🎥 Demo Video
 
-[Watch the CliniqAI Demo](https://youtu.be/DgvVKViuYm8?si=D1F0zGGIlTt-aOg8))
+[Watch the CliniqAI Demo](https://youtu.be/DgvVKViuYm8?si=D1F0zGGIlTt-aOg8)
 
 
 
