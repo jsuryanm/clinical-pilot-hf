@@ -190,6 +190,29 @@ def _initiate_discharge(patient_id: str) -> tuple[str, list]:
 
 
 # ---------------------------------------------------------------------------
+# Wiki health helpers
+# ---------------------------------------------------------------------------
+
+
+def _run_wiki_lint() -> tuple[str, list]:
+    try:
+        from app.agents.wiki.api import lint_wiki
+
+        report = lint_wiki()
+        stamp = report.generated_at.strftime("%Y-%m-%d %H:%M UTC")
+        if not report.issues:
+            return f"✅ No issues found. Corpus is clean as of {stamp}.", []
+        info = f"**{len(report.issues)} issue(s)** found as of {stamp}."
+        rows = [
+            [i.kind.replace("_", " ").title(), i.page_path, i.detail]
+            for i in report.issues
+        ]
+        return info, rows
+    except Exception as exc:
+        return f"⚠️ {exc}", []
+
+
+# ---------------------------------------------------------------------------
 # Tab builder
 # ---------------------------------------------------------------------------
 
@@ -340,9 +363,21 @@ def build_tab() -> gr.Blocks:
                     "Person A's nightly `lint_wiki()` job surfaces issues here. "
                     "It checks for: missing frontmatter fields, stale pages "
                     "(last updated > 180 days), broken `[[cross-refs]]`, "
-                    "and contradictions between condition pages.\n\n"
-                    "_Stub — populates once `app.agents.wiki.api.lint_wiki()` "
-                    "is implemented (Person A, Day 8)._"
+                    "and contradictions between condition pages."
+                )
+                run_lint_btn = gr.Button("Run lint", variant="primary")
+                lint_info_md = gr.Markdown("")
+                lint_df = gr.DataFrame(
+                    headers=["Issue", "Page", "Detail"],
+                    datatype=["str", "str", "str"],
+                    interactive=False,
+                    label="Lint issues",
+                )
+
+                run_lint_btn.click(
+                    fn=_run_wiki_lint,
+                    inputs=[],
+                    outputs=[lint_info_md, lint_df],
                 )
 
     return tab
