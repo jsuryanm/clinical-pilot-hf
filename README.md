@@ -4,6 +4,10 @@
 
 Built for the **[Hugging Face "Build Small" Hackathon](https://huggingface.co/build-small-hackathon)** — a suite of small, open, ≤32B models doing real hospital back-office work, with a human approving every decision that touches a patient.
 
+## 🎥 Demo Video
+
+[Watch the CliniqAI Demo](https://youtu.be/DgvVKViuYm8?si=D1F0zGGIlTt-aOg8))
+
 
 
 ---
