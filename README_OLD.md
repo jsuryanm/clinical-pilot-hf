@@ -1,3 +1,11 @@
+> ⚠️ **DEPRECATED — this is the original planning README (kept for historical / pitch context).**
+> It describes the *intended* 2-week hackathon scope, where only Documentation, Appointment, and
+> Rostering were "shipping" and the rest were "coming soon". The project has since moved past this
+> plan — **all seven agents are now implemented and demoable.** For the current, accurate
+> description of what the app does and how to run it, see **[`README.md`](README.md)**.
+
+---
+
 # CliniqAI — Clinical Operations AI for Indian Hospitals
 
 > Giving doctors and nurses back the time they spend on paperwork, so they can focus on patients.
