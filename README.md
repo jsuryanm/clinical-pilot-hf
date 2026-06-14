@@ -143,15 +143,23 @@ PYTHONHASHSEED=0 uv run pytest -q
 
 **64 tests pass** today — documentation, rostering, handover, clerical, orchestrator routing, integrations, and contracts suites are all green. The appointment and discharge happy-path tests currently error/fail due to a **mock-patching harness issue** (they patch names that are imported lazily inside functions, so `mock.patch` can't find them) — the underlying agent code is verified working via direct smoke tests; only the test wiring needs the patch target corrected.
 
----
+## Tech Stack
 
-## Tech Stack (as actually wired)
-
-**Backend:** Python 3.12 · FastAPI · LangGraph (orchestration) · LiteLLM (model routing) · Pydantic v2 (typed outputs) · SQLAlchemy + Alembic + PostgreSQL · Celery + Redis (reminders).
-**AI & retrieval:** Groq Whisper (`whisper-large-v3-turbo`) · ChromaDB + rank-bm25 (hybrid search) · Langfuse (tracing).
-**Frontend:** Gradio (three consoles, one-command HF Spaces deploy).
-**Integrations:** Google Calendar (with offline local-calendar fallback) · Gmail · Telegram Bot API
----
+| Layer | Technology |
+|---------|------------|
+| Frontend | Gradio, Hugging Face Spaces |
+| API Layer | FastAPI |
+| Multi-Agent Orchestration | LangGraph |
+| LLM Routing | LiteLLM |
+| Models | Groq, OpenRouter, Ollama |
+| Structured Outputs | Pydantic v2 |
+| Database | PostgreSQL, SQLAlchemy, Alembic |
+| Retrieval | ChromaDB, rank-bm25 |
+| Background Jobs | Celery, Redis |
+| Speech-to-Text | Groq Whisper (`whisper-large-v3-turbo`) |
+| Notifications | Gmail API, Telegram Bot API |
+| Scheduling | Google Calendar API |
+| Observability | Langfuse |
 
 ## Repository Map
 
