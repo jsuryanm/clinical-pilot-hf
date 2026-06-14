@@ -4,7 +4,7 @@
 
 Built for the **[Hugging Face "Build Small" Hackathon](https://huggingface.co/build-small-hackathon)** — a suite of small, open, ≤32B models doing real hospital back-office work, with a human approving every decision that touches a patient.
 
-> **Status note:** This README describes **what actually runs today**, verified against the code and test suite. The original planning document (which scoped only 3 agents as "shipping") is preserved as **[`README_OLD.md`](README_OLD.md)** for pitch/historical context. Since then, **all seven agents have been implemented.**
+
 
 ---
 
@@ -54,7 +54,7 @@ Legend: ✅ working & demoable · 🟡 works, needs an API key / external creds 
 | **Orchestrator routing** | ✅ | LangGraph state graph routes each request to the right agent (6 agent nodes + orchestrator). |
 | **Knowledge retrieval (Chroma + BM25)** | ⚙️ | Hybrid search is wired behind one `search()` API; populate the index with `scripts/build_indices.py`. |
 | **LLM routing** | ✅ | LiteLLM picks Groq / OpenRouter / Ollama per task; degrades to mocks when no provider is configured. |
-| **Patient notifications (Telegram / WhatsApp)** | 🟡 | Telegram (free Bot API) and WhatsApp (Twilio) send paths exist; both no-op safely to a stub until credentials are set, so nothing crashes in a dry run. |
+| **Patient notifications (Telegram)** | 🟡 | Telegram (free Bot API) send paths exist; both no-op safely to a stub until credentials are set, so nothing crashes in a dry run. |
 | **Observability (Langfuse)** | 🟡 | LLM + retrieval calls are traced when Langfuse keys are present. |
 
 ### Agents — all seven implemented
@@ -150,8 +150,7 @@ PYTHONHASHSEED=0 uv run pytest -q
 **Backend:** Python 3.12 · FastAPI · LangGraph (orchestration) · LiteLLM (model routing) · Pydantic v2 (typed outputs) · SQLAlchemy + Alembic + PostgreSQL · Celery + Redis (reminders).
 **AI & retrieval:** Groq Whisper (`whisper-large-v3-turbo`) · ChromaDB + rank-bm25 (hybrid search) · Langfuse (tracing).
 **Frontend:** Gradio (three consoles, one-command HF Spaces deploy).
-**Integrations:** Google Calendar (with offline local-calendar fallback) · Gmail · Telegram Bot API · WhatsApp (Twilio).
-
+**Integrations:** Google Calendar (with offline local-calendar fallback) · Gmail · Telegram Bot API
 ---
 
 ## Repository Map
