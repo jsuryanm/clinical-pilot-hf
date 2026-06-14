@@ -8,6 +8,8 @@ sdk_version: "6.15.1"
 app_file: deploy/hf_space/app.py
 python_version: "3.12"
 pinned: false
+authors:
+  - drumilhved
 ---
 
 # CliniqAI — Clinical Operations AI for Indian Hospitals
@@ -367,3 +369,13 @@ The three shipping agents above, working together, address the three biggest pai
 - Full audit trail via Langfuse for every agent action
 
 ---
+
+## Team
+
+| Role | HF / GitHub |
+|---|---|
+| **Person B — Patient Flow** (Appointments, WhatsApp, Celery reminders) | [@drumilhved](https://huggingface.co/drumilhved) · [GitHub](https://github.com/DrumilHV) |
+
+---
+
+*Built with ❤️ for Indian hospitals.*
