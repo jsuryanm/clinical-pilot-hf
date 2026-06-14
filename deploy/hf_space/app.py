@@ -18,12 +18,8 @@ from pathlib import Path
 # directory (sys.path[0]) would otherwise shadow the real `app` package — which
 # happens once the project is installed editable (repo root already on sys.path,
 # so a presence check would skip the insert).
-# When run via `app_file` in HF Spaces the repo root is the CWD.
-# parents[2] = repo root (deploy/hf_space/app.py → deploy/hf_space → deploy → root)
-# We add it unconditionally so the `app` package is importable everywhere.
 ROOT = Path(__file__).resolve().parents[2]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT))
 
 import gradio as gr  # noqa: E402
 
