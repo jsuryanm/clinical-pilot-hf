@@ -171,6 +171,15 @@ PYTHONHASHSEED=0 uv run pytest -q
 
 ---
 
+## Team
+
+Built by:
+
+- [@someonesphantom](https://huggingface.co/someonesphantom)
+- [@Jayasuryan0419](https://huggingface.co/Jayasuryan0419)
+
+---
+
 ## Clinical Safety
 
 - Every clinical recommendation is traceable to a specific wiki page or guideline source.
