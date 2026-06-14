@@ -175,6 +175,7 @@ PYTHONHASHSEED=0 uv run pytest -q
 
 Built by:
 
+- [@drumilhved](https://huggingface.co/drumilhved) — Patient Flow (Appointments, WhatsApp, Celery reminders)
 - [@someonesphantom](https://huggingface.co/someonesphantom)
 - [@Jayasuryan0419](https://huggingface.co/Jayasuryan0419)
 
